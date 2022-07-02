@@ -45,7 +45,7 @@ module CoinRPC
       # this won"t work without Oj.mimic_JSON
       result = Oj.strict_load(response, :decimal_class => BigDecimal)
       
-      raise result["error"]["message"] if !result.is_a?(Array) and result.key?("error")
+      raise result["error"]["message"] if result.is_a?(Hash) and !result["error"].nil?
 
       if result.is_a?(Hash) then
         result["result"]
