@@ -23,5 +23,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake", ">= 13.0", "< 14.0"
   spec.add_runtime_dependency "json", "~> 2.0", ">= 2.3.1", "< 3.0"
   spec.add_runtime_dependency "oj", ">= 3.10", "< 4.0"
-  spec.add_runtime_dependency "http", ">= 4.4", "< 5.2"
+  spec.add_runtime_dependency "typhoeus", ">= 1.0", "< 2.0"
 end

@@ -1,26 +1,38 @@
-require "http"
+require "uri"
+require "typhoeus"
 require "oj"
 require "json"
+require "securerandom"
 require "coinrpc/version"
 
 # let OJ mimic JSON
 Oj.mimic_JSON
 
 module CoinRPC
+
+  class TimeoutError < Exception; end
+  class UnsuccessfulError < Exception; end
+  class NoResponseError < Exception; end
+  
   class Client
 
     JSONRPC_V1_1 = "1.1".freeze
     JSONRPC_V2_0 = "2.0".freeze
+    TIMEOUT = 60.freeze
     
     def initialize(url)
 
       urinfo = URI.parse(url)
 
-      @client = HTTP.persistent("http://#{urinfo.host}:#{urinfo.port}").timeout(60).basic_auth({:user => urinfo.user, :pass => urinfo.password})
-      @id = rand(1000000)
-
+      @options = {:timeout => TIMEOUT, :userpwd => "#{urinfo.user}:#{urinfo.password}", :headers => {"User-Agent" => "CoinRPC/#{CoinRPC::VERSION}"}}.freeze
+      @url = "http://#{urinfo.host}:#{urinfo.port}/".freeze
+      
     end
-
+    
+    def random_id
+      SecureRandom.bytes(4).unpack1("H*").to_i(16)
+    end
+    
     def method_missing(method, *args)
 
       fixed_method = method.to_s.gsub(/\_/,"").freeze
@@ -28,9 +40,9 @@ module CoinRPC
       
       if args[0].is_a?(Array) and args[0].size > 0 then
         # batch request
-        post_data = args.map{|arg| {:jsonrpc => JSONRPC_V2_0, :method => fixed_method, :params => arg, :id => (@id += 1)} }
+        post_data = args.map{|arg| {:jsonrpc => JSONRPC_V2_0, :method => fixed_method, :params => arg, :id => random_id} }
       else
-        post_data = {:method => fixed_method, :params => args, :jsonrpc => JSONRPC_V1_1, :id => (@id += 1)}
+        post_data = {:method => fixed_method, :params => args, :jsonrpc => JSONRPC_V1_1, :id => random_id}
       end
       
       api_call(post_data)
@@ -40,10 +52,14 @@ module CoinRPC
     private
     def api_call(params)
 
-      response = @client.post("/", :body => Oj.dump(params, mode: :compat)).to_s
+      response = Typhoeus::Request.post(@url, :body => Oj.dump(params, :mode => :compat), **@options)
 
-      # this won"t work without Oj.mimic_JSON
-      result = Oj.strict_load(response, :decimal_class => BigDecimal)
+      raise CoinRPC::TimeoutError if response.timed_out?
+      raise CoinRPC::UnsuccessfulError unless response.success?
+      raise CoinRPC::NoResponseError if response.code.eql?(0)
+
+      # this won't work without Oj.mimic_JSON
+      result = Oj.strict_load(response.body, :decimal_class => BigDecimal)
       
       raise result["error"]["message"] if result.is_a?(Hash) and !result["error"].nil?
 
