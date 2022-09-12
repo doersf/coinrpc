@@ -30,7 +30,7 @@ module CoinRPC
     end
     
     def random_id
-      SecureRandom.bytes(4).unpack1("H*").to_i(16)
+      SecureRandom.hex(4).to_i(16)
     end
     
     def method_missing(method, *args)
@@ -55,8 +55,8 @@ module CoinRPC
       response = Typhoeus::Request.post(@url, :body => Oj.dump(params, :mode => :compat), **@options)
 
       raise CoinRPC::TimeoutError if response.timed_out?
-      raise CoinRPC::UnsuccessfulError unless response.success?
       raise CoinRPC::NoResponseError if response.code.eql?(0)
+      raise CoinRPC::UnsuccessfulError unless response.success?
 
       # this won't work without Oj.mimic_JSON
       result = Oj.strict_load(response.body, :decimal_class => BigDecimal)
