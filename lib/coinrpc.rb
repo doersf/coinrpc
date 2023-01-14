@@ -4,6 +4,7 @@ require "oj"
 require "json"
 require "securerandom"
 require "coinrpc/version"
+require "set"
 
 # let OJ mimic JSON
 Oj.mimic_JSON
@@ -19,6 +20,7 @@ module CoinRPC
     JSONRPC_V1_1 = "1.1".freeze
     JSONRPC_V2_0 = "2.0".freeze
     TIMEOUT = 60.freeze
+    ENDPOINTS_WITH_ARRAY_ARGS = ['testmempoolaccept'].to_set
     
     def initialize(url)
 
@@ -38,7 +40,7 @@ module CoinRPC
       fixed_method = method.to_s.gsub(/\_/,"").freeze
       post_data = nil
       
-      if args[0].is_a?(Array) and args[0].size > 0 then
+      if args[0].is_a?(Array) and args[0].size > 0 and !ENDPOINTS_WITH_ARRAY_ARGS.member?(method) then
         # batch request
         post_data = args.map{|arg| {:jsonrpc => JSONRPC_V2_0, :method => fixed_method, :params => arg, :id => random_id} }
       else
