@@ -26,7 +26,7 @@ module CoinRPC
 
       urinfo = URI.parse(url)
 
-      @options = {:timeout => TIMEOUT, :userpwd => "#{urinfo.user}:#{urinfo.password}", :headers => {"User-Agent" => "CoinRPC/#{CoinRPC::VERSION}"}}.freeze
+      @options = {:timeout => TIMEOUT, :userpwd => "#{urinfo.user}:#{urinfo.password}", :headers => {'User-Agent' => "CoinRPC/#{CoinRPC::VERSION}"}}.freeze
       @url = "http://#{urinfo.host}:#{urinfo.port}/".freeze
       
     end
@@ -37,10 +37,10 @@ module CoinRPC
     
     def method_missing(method, *args)
 
-      fixed_method = method.to_s.gsub(/\_/,"").freeze
+      fixed_method = method.to_s.gsub(/\_/, '').freeze
       post_data = nil
       
-      if args[0].is_a?(Array) and args[0].size > 0 and !ENDPOINTS_WITH_ARRAY_ARGS.member?(method) then
+      if args[0].is_a?(Array) and args[0].size > 0 and !ENDPOINTS_WITH_ARRAY_ARGS.member?(fixed_method) then
         # batch request
         post_data = args.map{|arg| {:jsonrpc => JSONRPC_V2_0, :method => fixed_method, :params => arg, :id => random_id} }
       else
@@ -63,13 +63,13 @@ module CoinRPC
       # this won't work without Oj.mimic_JSON
       result = Oj.strict_load(response.body, :decimal_class => BigDecimal)
       
-      raise result["error"]["message"] if result.is_a?(Hash) and !result["error"].nil?
+      raise result['error']['message'] if result.is_a?(Hash) and !result['error'].nil?
 
       if result.is_a?(Hash) then
-        result["result"]
+        result['result']
       else
         # batch call
-        result.map{|r| r["result"] || r["error"]}
+        result.map!{|r| r['result'] || r['error']}
       end
 
     end
