@@ -17,7 +17,7 @@ module CoinRPC
   
   class Client
 
-    JSONRPC_V1_1 = "1.1".freeze
+    JSONRPC_V1_0 = "1.0".freeze
     JSONRPC_V2_0 = "2.0".freeze
     TIMEOUT = 60.freeze
     ENDPOINTS_WITH_ARRAY_ARGS = ['testmempoolaccept'].to_set
@@ -28,7 +28,7 @@ module CoinRPC
 
       @options = {:timeout => TIMEOUT, :userpwd => "#{urinfo.user}:#{urinfo.password}", :headers => {'User-Agent' => "CoinRPC/#{CoinRPC::VERSION}"}}.freeze
       @url = "http://#{urinfo.host}:#{urinfo.port}/".freeze
-      
+
     end
     
     def random_id
@@ -44,7 +44,7 @@ module CoinRPC
         # batch request
         post_data = args.map{|arg| {:jsonrpc => JSONRPC_V2_0, :method => fixed_method, :params => arg, :id => random_id} }
       else
-        post_data = {:method => fixed_method, :params => args, :jsonrpc => JSONRPC_V1_1, :id => random_id}
+        post_data = {:method => fixed_method, :params => args, :jsonrpc => JSONRPC_V1_0, :id => random_id}
       end
       
       api_call(post_data)
